@@ -1,0 +1,12 @@
+# Dependencias
+node_modules/
+dist/
+build/
+bin/
+obj/
+
+.vscode/
+
+*.tmp
+*.temp
+out/

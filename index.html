@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💎Prisma de Acción💎</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Prisma de Acción 💎</h1>
+      <p class="subtitle">Organiza tus tareas por urgencia e importancia</p>
+    </header>
+
+    <div class="grid">
+      <section class="quadrant q2" data-quadrant="q2">
+        <div class="quadrant-header">
+          <h2>📅 No Urgente - Importante</h2>
+          <p class="quadrant-desc">Planifica</p>
+        </div>
+        <div class="tasks-container" id="tasks-q2"></div>
+        <button class="add-task-btn" data-quadrant="q2">+ Agregar tarea</button>
+      </section>
+
+      <section class="quadrant q1" data-quadrant="q1">
+        <div class="quadrant-header">
+          <h2>🔥 Urgente - Importante</h2>
+          <p class="quadrant-desc">¡Hacerlo ya!</p>
+        </div>
+        <div class="tasks-container" id="tasks-q1"></div>
+        <button class="add-task-btn" data-quadrant="q1">+ Agregar tarea</button>
+      </section>
+
+      <section class="quadrant q4" data-quadrant="q4">
+        <div class="quadrant-header">
+          <h2>🗑️ No Urgente - No Importante</h2>
+          <p class="quadrant-desc">De chill</p>
+        </div>
+        <div class="tasks-container" id="tasks-q4"></div>
+        <button class="add-task-btn" data-quadrant="q4">+ Agregar tarea</button>
+      </section>
+
+      <section class="quadrant q3" data-quadrant="q3">
+        <div class="quadrant-header">
+          <h2>⚡ Urgente - No Importante</h2>
+          <p class="quadrant-desc">Delegar</p>
+        </div>
+        <div class="tasks-container" id="tasks-q3"></div>
+        <button class="add-task-btn" data-quadrant="q3">+ Agregar tarea</button>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal para agregar/editar tarea -->
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <h3 id="modalTitle">Nueva Tarea</h3>
+      <input 
+        type="text" 
+        id="taskInput" 
+        placeholder="Escribe tu tarea aquí..."
+        maxlength="200"
+      >
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelBtn">Cancelar</button>
+        <button class="btn-save" id="saveBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
