@@ -11,6 +11,7 @@ let editingTaskId = null;
 
 const modal = document.getElementById('taskModal');
 const taskInput = document.getElementById('taskInput');
+const taskDescInput = document.getElementById('taskDescInput');
 const modalTitle = document.getElementById('modalTitle');
 const saveBtn = document.getElementById('saveBtn');
 const cancelBtn = document.getElementById('cancelBtn');
@@ -40,9 +41,10 @@ modal.addEventListener('click', (e) => {
 
 
 // Modal
-function openModal(taskText = '') {
+function openModal(taskText = '', taskDesc = '') {
   modal.classList.add('active');
   taskInput.value = taskText;
+  taskDescInput.value = taskDesc;
   taskInput.focus();
   modalTitle.textContent = editingTaskId ? 'Editar Tarea' : 'Nueva Tarea';
 }
@@ -50,6 +52,7 @@ function openModal(taskText = '') {
 function closeModal() {
   modal.classList.remove('active');
   taskInput.value = '';
+  taskDescInput.value = '';
   currentQuadrant = null;
   editingTaskId = null;
 }
@@ -57,6 +60,7 @@ function closeModal() {
 // Guardar tarea
 function saveTask() {
   const text = taskInput.value.trim();
+  const desc = taskDescInput.value.trim();
   
   if (!text) {
     taskInput.focus();
@@ -68,19 +72,28 @@ function saveTask() {
     const task = findTaskById(editingTaskId);
     if (task) {
       task.text = text;
+      task.description = desc;
+    }
+    // Re-render the quadrant where the task lives
+    for (let q in tasks) {
+      if (tasks[q].find(t => t.id === editingTaskId)) {
+        renderTasks(q);
+        break;
+      }
     }
   } else {
     // Crear nueva tarea
     const newTask = {
       id: Date.now().toString(),
       text: text,
+      description: desc,
       createdAt: new Date().toISOString()
     };
     tasks[currentQuadrant].push(newTask);
+    renderTasks(currentQuadrant);
   }
 
   saveTasks();
-  renderTasks(currentQuadrant);
   closeModal();
 }
 
@@ -90,7 +103,7 @@ function editTask(quadrant, taskId) {
   if (task) {
     currentQuadrant = quadrant;
     editingTaskId = taskId;
-    openModal(task.text);
+    openModal(task.text, task.description || '');
   }
 }
 
@@ -101,6 +114,52 @@ function deleteTask(quadrant, taskId) {
   renderTasks(quadrant);
 }
 
+// Toggle expandir/colapsar detalle inline
+function toggleTaskDetail(taskId) {
+  const detailEl = document.getElementById(`detail-${taskId}`);
+  const taskEl = document.querySelector(`[data-task-id="${taskId}"]`);
+  if (!detailEl || !taskEl) return;
+
+  const isOpen = detailEl.classList.contains('open');
+
+  // Cerrar todos los demás abiertos en el mismo cuadrante
+  const quadrant = taskEl.dataset.quadrant;
+  const container = document.getElementById(`tasks-${quadrant}`);
+  container.querySelectorAll('.task-detail.open').forEach(el => {
+    el.classList.remove('open');
+    const parentTask = el.closest('.task-wrapper');
+    if (parentTask) parentTask.classList.remove('expanded');
+  });
+
+  if (!isOpen) {
+    detailEl.classList.add('open');
+    taskEl.classList.add('expanded');
+  }
+}
+
+// Guardar descripción inline
+function saveInlineDesc(taskId) {
+  const textarea = document.getElementById(`inline-desc-${taskId}`);
+  if (!textarea) return;
+
+  const newDesc = textarea.value.trim();
+  const task = findTaskById(taskId);
+  if (task) {
+    task.description = newDesc;
+    saveTasks();
+
+    // Feedback visual breve
+    const btn = textarea.nextElementSibling;
+    if (btn) {
+      btn.textContent = '✓ Guardado';
+      btn.classList.add('saved');
+      setTimeout(() => {
+        btn.textContent = 'Guardar';
+        btn.classList.remove('saved');
+      }, 1500);
+    }
+  }
+}
 
 // Buscar tarea por ID en todos los cuadrantes
 function findTaskById(taskId) {
@@ -117,8 +176,8 @@ function renderTasks(quadrant) {
   container.innerHTML = '';
 
   tasks[quadrant].forEach(task => {
-    const taskEl = createTaskElement(task, quadrant);
-    container.appendChild(taskEl);
+    const wrapper = createTaskElement(task, quadrant);
+    container.appendChild(wrapper);
   });
 }
 
@@ -128,6 +187,11 @@ function renderAllTasks() {
 
 // Crear elemento de tarea
 function createTaskElement(task, quadrant) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'task-wrapper';
+
+  const hasDesc = task.description && task.description.trim();
+
   const taskEl = document.createElement('div');
   taskEl.className = 'task';
   taskEl.draggable = true;
@@ -135,12 +199,35 @@ function createTaskElement(task, quadrant) {
   taskEl.dataset.quadrant = quadrant;
 
   taskEl.innerHTML = `
-    <div class="task-text">${escapeHtml(task.text)}</div>
+    <div class="task-main" onclick="toggleTaskDetail('${task.id}')">
+      <div class="task-text">${escapeHtml(task.text)}</div>
+      <div class="task-meta">
+        ${hasDesc ? '<span class="has-desc-dot" title="Tiene descripción">●</span>' : ''}
+        <span class="expand-arrow">▾</span>
+      </div>
+    </div>
     <div class="task-actions">
       <button class="task-btn edit" title="Editar">✏️</button>
       <button class="task-btn delete" title="Eliminar">🗑️</button>
     </div>
   `;
+
+  // Detail panel
+  const detailEl = document.createElement('div');
+  detailEl.className = 'task-detail';
+  detailEl.id = `detail-${task.id}`;
+  detailEl.innerHTML = `
+    <textarea
+      id="inline-desc-${task.id}"
+      class="inline-desc-textarea"
+      placeholder="Agrega una descripción, notas o contexto..."
+      maxlength="500"
+    >${escapeHtml(task.description || '')}</textarea>
+    <button class="inline-save-btn" onclick="saveInlineDesc('${task.id}')">Guardar</button>
+  `;
+
+  wrapper.appendChild(taskEl);
+  wrapper.appendChild(detailEl);
 
   // Event listeners para botones
   taskEl.querySelector('.edit').addEventListener('click', (e) => {
@@ -159,14 +246,14 @@ function createTaskElement(task, quadrant) {
   taskEl.addEventListener('dragstart', handleDragStart);
   taskEl.addEventListener('dragend', handleDragEnd);
 
-  return taskEl;
+  return wrapper;
 }
 
 // Drag and Drop
 let draggedElement = null;
 
 function handleDragStart(e) {
-  draggedElement = e.target;
+  draggedElement = e.target.closest('.task');
   e.target.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
 }
@@ -187,9 +274,7 @@ document.querySelectorAll('.quadrant').forEach(quadrant => {
 });
 
 function handleDragOver(e) {
-  if (e.preventDefault) {
-    e.preventDefault();
-  }
+  if (e.preventDefault) e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   return false;
 }
@@ -205,16 +290,15 @@ function handleDragLeave(e) {
 }
 
 function handleDrop(e) {
-  if (e.stopPropagation) {
-    e.stopPropagation();
-  }
+  if (e.stopPropagation) e.stopPropagation();
 
   const targetQuadrant = e.currentTarget.dataset.quadrant;
+  if (!draggedElement) return false;
+
   const sourceQuadrant = draggedElement.dataset.quadrant;
   const taskId = draggedElement.dataset.taskId;
 
   if (targetQuadrant !== sourceQuadrant) {
-    // Mover tarea entre cuadrantes
     const taskIndex = tasks[sourceQuadrant].findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
       const [task] = tasks[sourceQuadrant].splice(taskIndex, 1);
@@ -238,6 +322,12 @@ function loadTasks() {
   if (saved) {
     try {
       tasks = JSON.parse(saved);
+      // Asegurar que todas las tareas tengan el campo description
+      for (let q in tasks) {
+        tasks[q].forEach(task => {
+          if (task.description === undefined) task.description = '';
+        });
+      }
     } catch (e) {
       console.error('Error cargando tareas:', e);
     }
