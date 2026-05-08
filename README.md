@@ -21,13 +21,13 @@ npm start
 
 ## Cuadrantes
 
-### 🔥 Q1: Urgente e Importante
+-  🔥 Q1: Urgente e Importante
 
-### 📅 Q2: No Urgente pero Importante  
+-  📅 Q2: No Urgente pero Importante  
 
-### ⚡ Q3: Urgente pero No Importante
+-  ⚡ Q3: Urgente pero No Importante
 
-### 🗑️ Q4: No Urgente ni Importante
+-  🗑️ Q4: No Urgente ni Importante
 
 
 ## 🛠️ Tecnologías
